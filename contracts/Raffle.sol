@@ -27,9 +27,7 @@ contract Raffle is VRFConsumerBaseV2 {
         emit RaffleEntry(msg.sender);
     }
 
-    // function pickWinner() external {
-
-    // }
+    function pickWinner() external {}
 
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords)
         internal
