@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+
 error Raffle__NotEnoughETH();
 
-contract Raffle {
+contract Raffle is VRFConsumerBaseV2 {
     // State variables //
     uint256 private s_ticketPrice;
     address payable[] private s_players;
@@ -11,7 +13,9 @@ contract Raffle {
     // Events //
     event RaffleEntry(address indexed player);
 
-    constructor(uint256 ticketPrice) {
+    constructor(address vrfCoordinatorV2, uint256 ticketPrice)
+        VRFConsumerBaseV2(vrfCoordinatorV2)
+    {
         s_ticketPrice = ticketPrice;
     }
 
@@ -23,9 +27,14 @@ contract Raffle {
         emit RaffleEntry(msg.sender);
     }
 
-    // function pickWinner() private {
+    // function pickWinner() external {
 
     // }
+
+    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords)
+        internal
+        override
+    {}
 
     // Function returns the price set the ticket price set by the deployer
     function getTicketPrice() public view returns (uint256) {
