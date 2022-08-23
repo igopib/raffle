@@ -5,9 +5,12 @@ error Raffle__NotEnoughETH();
 
 contract Raffle {
     
-    // State variables 
+    // State variables //
     uint256  private s_ticketPrice;
     address payable[] private s_players;
+
+    // Events //
+    event RaffleEntry(address indexed player);
 
     constructor(uint256 ticketPrice) {
         s_ticketPrice = ticketPrice;
@@ -16,6 +19,7 @@ contract Raffle {
     function enterRaffle()  public payable {
         if(msg.value < s_ticketPrice){revert Raffle__NotEnoughETH();}
         s_players.push(payable(msg.sender));
+        emit RaffleEntry(msg.sender);
     }
 
     // function pickWinner() private {
