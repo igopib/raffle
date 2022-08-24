@@ -53,6 +53,11 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         s_raffleState = RaffleState.OPEN;
     }
 
+    /* 
+        Function to enter raffle
+        *Checks if the passed value is no lower than the set ticket price.
+        *Also checks if the raffle state is open when person tries to enter.
+    */
     function enterRaffle() public payable {
         if (msg.value < i_ticketPrice) {
             revert Raffle__NotEnoughETH();
@@ -70,8 +75,12 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         bytes calldata /*checkData*/
     ) external override {}
 
-    // function performUpkeep() external returns () {}
+    //function performUpkeep() external returns () {}
 
+    /*
+        Function uses chainlink vrf and requests for a random number as requestId
+        Sets raffle state to processing upon executing.
+    */
     function requestRandomWinner() external {
         s_raffleState = RaffleState.PROCESSING;
 
@@ -84,6 +93,11 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         );
         emit RequestedRaffleWinner(requestId);
     }
+
+    /**
+     * @dev This is the function that Chainlink VRF node
+     * calls to send the money to the random winner.
+     */
 
     function fulfillRandomWords(
         uint256,
