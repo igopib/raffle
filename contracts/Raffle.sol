@@ -149,6 +149,8 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         emit RaffleWinners(recentWinner);
     }
 
+    /*   View / Pure functions  */
+
     // Function returns the price set the ticket price set by the deployer
     function getTicketPrice() public view returns (uint256) {
         return i_ticketPrice;
@@ -162,5 +164,17 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     // Function returns the address of latest raffle winner
     function getRecentWinner() public view returns (address) {
         return s_recentWinner;
+    }
+
+    function prizePool() public view returns (uint256) {
+        return address(this).balance;
+    }
+
+    function getRaffleState() public view returns (RaffleState) {
+        return s_raffleState;
+    }
+
+    function numberOfPlayers() public view returns (uint256) {
+        return s_players.length;
     }
 }
