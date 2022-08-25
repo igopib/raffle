@@ -8,6 +8,11 @@ import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 error Raffle__NotEnoughETH();
 error Raffle__TransferFailed();
 error Raffle__RaffleNotOpen();
+error Raffle__UpkeepNotNeeded(
+    uint256 currentBalance,
+    uint256 numPlayers,
+    uint256 raffleState
+);
 
 contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     // Enum creates a new data type ( uint256 0 = OPEN, 1 = PROCESSING)
@@ -25,11 +30,12 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     uint32 private immutable i_callBackGasLimit;
     uint32 private constant NUM_WORDS = 1;
     uint16 private constant BLOCK_CONFIRMATIONS = 3;
-    uint256 private immutable i_interal;
 
     // Lottery Variables //
     address private s_recentWinner;
     RaffleState private s_raffleState;
+    uint256 private s_lastTimeStamp;
+    uint256 private immutable i_interval;
 
     // Events //
     event RaffleEntry(address indexed player);
@@ -49,8 +55,9 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         i_callBackGasLimit = callbackGasLimit;
-        i_interal = updateInterval;
         s_raffleState = RaffleState.OPEN;
+        s_lastTimeStamp = block.timestamp; // Tracks last timestamp
+        i_interval = updateInterval;
     }
 
     /* 
@@ -71,17 +78,40 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         emit RaffleEntry(msg.sender);
     }
 
-    function checkUpKeep(
-        bytes calldata /*checkData*/
-    ) external override {}
-
-    //function performUpkeep() external returns () {}
+    function checkUpkeep(
+        bytes memory /* checkData */
+    )
+        public
+        view
+        override
+        returns (
+            bool upkeepNeeded,
+            bytes memory /* performData */
+        )
+    {
+        bool isOpen = (RaffleState.OPEN == s_raffleState);
+        bool timePassed = ((block.timestamp - s_lastTimeStamp) > i_interval);
+        bool hasPlayers = (s_players.length > 0);
+        bool hasBalance = address(this).balance > 0;
+        upkeepNeeded = (isOpen && timePassed && hasPlayers && hasBalance);
+    }
 
     /*
         Function uses chainlink vrf and requests for a random number as requestId
         Sets raffle state to processing upon executing.
     */
-    function requestRandomWinner() external {
+    function performUpkeep(
+        bytes calldata /* performData */
+    ) external override {
+        (bool upkeepNeeded, ) = checkUpkeep("");
+        if (!upkeepNeeded) {
+            revert Raffle__UpkeepNotNeeded(
+                address(this).balance,
+                s_players.length,
+                uint256(s_raffleState)
+            );
+        }
+
         s_raffleState = RaffleState.PROCESSING;
 
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
@@ -107,12 +137,9 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         uint256 indexOfWinner = randomWords[0] % s_players.length;
         address payable recentWinner = s_players[indexOfWinner];
         s_recentWinner = recentWinner;
-
-        //Changes state back to open.
-        s_raffleState = RaffleState.OPEN;
-
-        //Resets the player address array
-        s_players = new address payable[](0);
+        s_raffleState = RaffleState.OPEN; //Changes state back to open.
+        s_players = new address payable[](0); //Resets the player address array
+        s_lastTimeStamp = block.timestamp; //Updates timestamp
         // Sending ETH to winner
         (bool success, ) = recentWinner.call{value: address(this).balance}("");
         if (!success) {
