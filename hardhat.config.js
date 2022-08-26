@@ -10,14 +10,16 @@ const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY
 module.exports = {
     defaultNetwork: "hardhat",
     networks: {
-        chainId: 31337,
-        blockConfirmations: 1,
-    },
-    rinkeby: {
-        chainId: 4,
-        blockConfirmations: 6,
-        url: RINKEBY_RPC_URL,
-        accounts: [PRIVATE_KEY],
+        hardhat: {
+            chainId: 31337,
+            blockConfirmations: 1,
+        },
+        rinkeby: {
+            chainId: 4,
+            blockConfirmations: 6,
+            url: RINKEBY_RPC_URL,
+            accounts: [PRIVATE_KEY],
+        },
     },
     solidity: "0.8.9",
     namedAccounts: {
